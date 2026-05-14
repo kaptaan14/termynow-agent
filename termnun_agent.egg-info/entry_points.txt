@@ -1,0 +1,2 @@
+[console_scripts]
+termnun-agent = termnun_agent.cli:main
