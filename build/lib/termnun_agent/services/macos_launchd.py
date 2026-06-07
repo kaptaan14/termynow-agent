@@ -7,7 +7,7 @@ import subprocess
 from pathlib import Path
 
 
-LABEL = "dev.termnun.agent"
+LABEL = "dev.termynow.agent"
 PLIST_NAME = f"{LABEL}.plist"
 
 
@@ -22,9 +22,14 @@ def install_agent(*, exec_args: list[str], log_file: str) -> None:
     out_dir = Path.home() / "Library" / "LaunchAgents"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    env: dict[str, str] = {"TERMNU_LOG_FILE": log_file}
-    for key in ("TERMNU_API_BASE", "TERMNU_DASHBOARD_URL", "TERMNU_LOG_LEVEL"):
-        val = os.environ.get(key)
+    env: dict[str, str] = {"TERMYNOW_LOG_FILE": log_file}
+    mapping = {
+        "TERMYNOW_API_BASE": "TERMNU_API_BASE",
+        "TERMYNOW_DASHBOARD_URL": "TERMNU_DASHBOARD_URL",
+        "TERMYNOW_LOG_LEVEL": "TERMNU_LOG_LEVEL",
+    }
+    for key, fallback in mapping.items():
+        val = os.environ.get(key) or os.environ.get(fallback)
         if val:
             env[key] = val
 

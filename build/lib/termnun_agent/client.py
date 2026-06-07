@@ -120,7 +120,7 @@ class RelayClient:
         Infinite reconnect loop: mint token, connect WebSocket, process messages,
         then tear down local PTYs and backoff before retrying.
         """
-        backoff = Backoff(initial=1.0, max_seconds=60.0, multiplier=2.0)
+        backoff = Backoff(initial=1.0, max_seconds=60.0, multiplier=2.0, min_seconds=1.0)
         while True:
             delay: float | None = None
             try:

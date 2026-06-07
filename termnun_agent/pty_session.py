@@ -4,6 +4,7 @@ import asyncio
 import errno
 import os
 import pty
+import signal
 import struct
 import termios
 
@@ -16,7 +17,7 @@ def _set_winsize(fd: int, rows: int, cols: int) -> None:
 
 
 class PtySession:
-    """One interactive bash session bound to a cloud `session_id`."""
+    """One interactive shell session bound to a cloud `session_id`."""
 
     def __init__(self, session_id: str, cols: int, rows: int, on_output) -> None:
         self.session_id = session_id
@@ -29,31 +30,51 @@ class PtySession:
 
     def spawn(self) -> None:
         pid, master_fd = pty.fork()
+
         if pid == 0:
             try:
                 os.chdir(os.path.expanduser("~"))
-                os.execlp("bash", "bash", "-il")
+
+                # Proper terminal environment for clear, colors, TUIs, etc.
+                os.environ["TERM"] = os.environ.get("TERM") or "xterm-256color"
+                os.environ["COLORTERM"] = os.environ.get("COLORTERM") or "truecolor"
+
+                # macOS default shell is usually zsh, Linux often bash.
+                shell = os.environ.get("SHELL") or "/bin/bash"
+                shell_name = os.path.basename(shell)
+
+                # Interactive login shell: argv[0] starts with "-"
+                os.execlp(shell, f"-{shell_name}")
             except OSError:
                 os._exit(127)
+
         self._pid = pid
         self._master_fd = master_fd
+
         os.set_blocking(master_fd, False)
         _set_winsize(master_fd, self._rows, self._cols)
+
         self._reader_task = asyncio.create_task(self._pump())
 
     def resize(self, cols: int, rows: int) -> None:
         self._cols = cols
         self._rows = rows
+
         if self._master_fd is not None:
             _set_winsize(self._master_fd, rows, cols)
 
     async def _pump(self) -> None:
         assert self._master_fd is not None
+
         loop = asyncio.get_running_loop()
         master = self._master_fd
+
         while True:
             try:
-                chunk = await loop.run_in_executor(None, lambda: os.read(master, 65536))
+                chunk = await loop.run_in_executor(
+                    None,
+                    lambda: os.read(master, 65536),
+                )
             except BlockingIOError:
                 await asyncio.sleep(0.01)
                 continue
@@ -62,14 +83,20 @@ class PtySession:
                     chunk = b""
                 else:
                     raise
+
             if not chunk:
                 break
+
             await self.on_output(chunk)
 
     def write(self, data: bytes) -> None:
         if self._master_fd is None:
             return
-        os.write(self._master_fd, data)
+
+        try:
+            os.write(self._master_fd, data)
+        except OSError:
+            pass
 
     async def close(self) -> None:
         if self._reader_task:
@@ -78,15 +105,19 @@ class PtySession:
                 await self._reader_task
             except asyncio.CancelledError:
                 pass
+
+        if self._pid is not None:
+            try:
+                os.kill(self._pid, signal.SIGHUP)
+            except OSError:
+                pass
+
         if self._master_fd is not None:
             try:
                 os.close(self._master_fd)
             except OSError:
                 pass
-        if self._pid is not None:
-            try:
-                os.kill(self._pid, 9)
-            except OSError:
-                pass
+
         self._master_fd = None
         self._pid = None
+        self._reader_task = None

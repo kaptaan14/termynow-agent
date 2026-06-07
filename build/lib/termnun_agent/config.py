@@ -9,8 +9,8 @@ from pathlib import Path
 def _config_dir() -> Path:
     base = os.environ.get("XDG_CONFIG_HOME")
     if base:
-        return Path(base) / "termnun"
-    return Path.home() / ".config" / "termnun"
+        return Path(base) / "termynow"
+    return Path.home() / ".config" / "termynow"
 
 
 @dataclass

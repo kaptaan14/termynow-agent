@@ -7,7 +7,7 @@ import textwrap
 from pathlib import Path
 
 
-UNIT_NAME = "termnun-agent.service"
+UNIT_NAME = "termynow-agent.service"
 
 
 def _unit_path() -> Path:
@@ -29,22 +29,22 @@ def install_user_unit(*, exec_args: list[str], log_file: str) -> None:
 
     exec_line = " ".join(_shell_quote(a) for a in exec_args)
     env_block = ""
-    api = os.environ.get("TERMNU_API_BASE")
-    dash = os.environ.get("TERMNU_DASHBOARD_URL")
-    lvl = os.environ.get("TERMNU_LOG_LEVEL")
+    api = os.environ.get("TERMYNOW_API_BASE") or os.environ.get("TERMNU_API_BASE")
+    dash = os.environ.get("TERMYNOW_DASHBOARD_URL") or os.environ.get("TERMNU_DASHBOARD_URL")
+    lvl = os.environ.get("TERMYNOW_LOG_LEVEL") or os.environ.get("TERMNU_LOG_LEVEL")
     if api:
-        env_block += f"Environment=TERMNU_API_BASE={api}\n"
+        env_block += f"Environment=TERMYNOW_API_BASE={api}\n"
     if dash:
-        env_block += f"Environment=TERMNU_DASHBOARD_URL={dash}\n"
+        env_block += f"Environment=TERMYNOW_DASHBOARD_URL={dash}\n"
     if lvl:
-        env_block += f"Environment=TERMNU_LOG_LEVEL={lvl}\n"
-    env_block += f"Environment=TERMNU_LOG_FILE={log_file}\n"
+        env_block += f"Environment=TERMYNOW_LOG_LEVEL={lvl}\n"
+    env_block += f"Environment=TERMYNOW_LOG_FILE={log_file}\n"
     env_block += "Environment=TERM=xterm-256color\n"
 
     content = textwrap.dedent(
         f"""\
         [Unit]
-        Description=Termnun relay agent
+        Description=Termynow relay agent
         After=network.target
 
         [Service]

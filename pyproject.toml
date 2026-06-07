@@ -3,14 +3,14 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "termnun-agent"
+name = "termynow-agent"
 version = "0.1.0"
-description = "Termnun laptop relay agent (daemon + CLI)"
+description = "Termynow laptop relay agent (daemon + CLI)"
 requires-python = ">=3.11"
 dependencies = ["httpx==0.28.1", "websockets==15.0.1"]
 
 [project.scripts]
-termnun-agent = "termnun_agent.cli:main"
+termynow-agent = "termnun_agent.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

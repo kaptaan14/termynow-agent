@@ -21,7 +21,7 @@ log = logging.getLogger(__name__)
 
 
 def _default_api_base() -> str:
-    return os.environ.get("TERMNU_API_BASE", "https://termynow.com").rstrip("/")
+    return (os.environ.get("TERMYNOW_API_BASE") or os.environ.get("TERMNU_API_BASE") or "https://termynow.com").rstrip("/")
 
 
 async def _cmd_login(email: str, password: str, api_base: str) -> None:
@@ -60,8 +60,8 @@ async def _cmd_pairing_code(api_base: str, token: str, device_id: str) -> None:
 
 
 def _prompt_credentials(email: str | None, password: str | None) -> tuple[str, str]:
-    e = email or os.environ.get("TERMNU_EMAIL") or ""
-    p = password or os.environ.get("TERMNU_PASSWORD") or ""
+    e = email or os.environ.get("TERMYNOW_EMAIL") or os.environ.get("TERMNU_EMAIL") or ""
+    p = password or os.environ.get("TERMYNOW_PASSWORD") or os.environ.get("TERMNU_PASSWORD") or ""
     if not e and sys.stdin.isatty():
         e = input("Email: ").strip()
     if not p and sys.stdin.isatty():
@@ -73,14 +73,12 @@ def _prompt_credentials(email: str | None, password: str | None) -> tuple[str, s
 
 
 def main() -> None:
-    p = argparse.ArgumentParser(prog="termnun-agent", description="Termnun laptop relay agent")
+    p = argparse.ArgumentParser(prog="termynow-agent", description="Termynow laptop relay agent")
     p.add_argument("--api-base", default=_default_api_base(), help="API base URL (or TERMNU_API_BASE)")
 
     subs = p.add_subparsers(dest="cmd")
 
-    setup = subs.add_parser("setup", help="one-step login, device registration (hostname), and pairing code")
-    setup.add_argument("--email", default=None)
-    setup.add_argument("--password", default=None)
+    setup = subs.add_parser("setup", help="one-step anonymous device registration and pairing code")
     setup.add_argument("--device-name", default=None, help="override auto-detected device name")
 
     inst = subs.add_parser("install-service", help="install OS background service (systemd / launchd)")
@@ -117,24 +115,23 @@ def main() -> None:
         setup_logging(level=args.log_level, foreground=args.foreground)
         cfg = AgentConfig.load()
         if cfg is None or not cfg.access_token or not cfg.device_id:
-            log.error("missing config; run `termnun-agent setup` first")
+            log.error("missing config; run `termynow-agent setup` first")
             raise SystemExit(2)
         client = RelayClient(cfg)
         asyncio.run(client.run_forever())
         return
 
     if args.cmd == "setup":
-        setup_logging(level=os.environ.get("TERMNU_LOG_LEVEL"), foreground=True)
-        email, password = _prompt_credentials(args.email, args.password)
+        setup_logging(level=os.environ.get("TERMYNOW_LOG_LEVEL") or os.environ.get("TERMNU_LOG_LEVEL"), foreground=True)
         name = args.device_name or default_device_name()
-        asyncio.run(run_setup(api_base=api_base, email=email, password=password, device_name=name))
+        asyncio.run(run_setup(api_base=api_base, device_name=name))
         return
 
     if args.cmd == "install-service":
-        setup_logging(level=os.environ.get("TERMNU_LOG_LEVEL"), foreground=True)
-        exe = shutil.which("termnun-agent")
+        setup_logging(level=os.environ.get("TERMYNOW_LOG_LEVEL") or os.environ.get("TERMNU_LOG_LEVEL"), foreground=True)
+        exe = shutil.which("termynow-agent")
         if not exe:
-            log.error("termnun-agent executable not found on PATH")
+            log.error("termynow-agent executable not found on PATH")
             raise SystemExit(2)
         log_path = str(default_log_path())
         exec_args = [exe, "run", "--foreground"]
@@ -148,7 +145,7 @@ def main() -> None:
         uninstall_background_service()
         return
 
-    setup_logging(level=os.environ.get("TERMNU_LOG_LEVEL"), foreground=True)
+    setup_logging(level=os.environ.get("TERMYNOW_LOG_LEVEL") or os.environ.get("TERMNU_LOG_LEVEL"), foreground=True)
 
     async def runner() -> None:
         if args.cmd == "login":
@@ -156,7 +153,7 @@ def main() -> None:
             return
         cfg = AgentConfig.load()
         if cfg is None or not cfg.access_token:
-            log.error("run `termnun-agent login` or `termnun-agent setup` first")
+            log.error("run `termynow-agent login` or `termynow-agent setup` first")
             raise SystemExit(2)
         if args.cmd == "device-create":
             nm = args.name or default_device_name()

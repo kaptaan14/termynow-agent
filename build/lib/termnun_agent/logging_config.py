@@ -19,7 +19,7 @@ def default_log_path() -> Path:
 
 def setup_logging(*, level: str | None = None, log_file: Path | str | None = None, foreground: bool) -> None:
     """Configure root logging for CLI and daemon modes."""
-    lvl_name = (level or os.environ.get("TERMNU_LOG_LEVEL") or "INFO").upper()
+    lvl_name = (level or os.environ.get("TER MNU_LOG_LEVEL") or "INFO").upper()
     lvl = getattr(logging, lvl_name, logging.INFO)
 
     handlers: list[logging.Handler] = []

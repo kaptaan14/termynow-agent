@@ -64,3 +64,13 @@ async def mint_agent_token(client: httpx.AsyncClient, api_base: str, token: str,
     if r.status_code >= 400:
         raise ApiError(f"pairing code failed: {r.text}", status_code=r.status_code)
     return r.json()
+
+
+async def register_device_anonymous(client: httpx.AsyncClient, api_base: str, name: str) -> dict[str, Any]:
+    r = await client.post(
+        f"{api_base}/v1/devices/register-anonymous",
+        json={"name": name},
+    )
+    if r.status_code >= 400:
+        raise ApiError(f"anonymous device registration failed: {r.text}", status_code=r.status_code)
+    return r.json()
