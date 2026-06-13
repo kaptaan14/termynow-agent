@@ -72,5 +72,5 @@ async def register_device_anonymous(client: httpx.AsyncClient, api_base: str, na
         json={"name": name},
     )
     if r.status_code >= 400:
-        raise ApiError(f"anonymous device registration failed: {r.text}", status_code=r.status_code)
+        raise ApiError(f"Device registration failed: {r.text}", status_code=r.status_code)
     return r.json()

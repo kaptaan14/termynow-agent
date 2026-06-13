@@ -26,7 +26,6 @@ async def run_setup(*, api_base: str, device_name: str | None = None) -> None:
     name = (device_name or default_device_name()).strip() or default_device_name()
     api_base = api_base.rstrip("/")
 
-    print("Registering device anonymously...", flush=True)
     async with httpx.AsyncClient(timeout=60) as client:
         try:
             reg = await register_device_anonymous(client, api_base, name)
